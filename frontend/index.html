@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Model Speed Benchmark</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>AI Model Speed Benchmark</h1>
+        </header>
+
+        <main class="main-content">
+            <!-- Input Section -->
+            <section class="input-section">
+                <label for="promptInput" class="input-label">Describe the UI pattern you need</label>
+                <div class="input-container">
+                    <textarea 
+                        id="promptInput" 
+                        placeholder="Example: Create a responsive 3-column grid with product cards. Each card should have an image, title, price, and buy button..."
+                        rows="4"
+                    ></textarea>
+                    <div class="input-actions">
+                        <div class="content-selector">
+                            <label for="contentSelector" class="selector-label">Content:</label>
+                            <select id="contentSelector" class="content-dropdown">
+                                <option value="none">No Content</option>
+                                <option value="basic">Content Basic</option>
+                                <option value="medium">Content Medium</option>
+                                <option value="complex">Content Complex</option>
+                            </select>
+                        </div>
+                        <div class="right-controls">
+                            <div class="model-selector">
+                                <button id="modelSelectorBtn" class="btn btn-secondary btn-sm">
+                                    <span id="modelSelectorText">All models selected</span>
+                                    <span class="dropdown-arrow">▼</span>
+                                </button>
+                                <div id="modelDropdown" class="model-dropdown hidden">
+                                    <!-- Models will be loaded dynamically -->
+                                </div>
+                            </div>
+                            <button id="runBenchmarkBtn" class="btn btn-primary" disabled>
+                                Generate with Selected Models
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="costEstimate" class="cost-estimate"></div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="resultsSection" class="results-section" style="display: none;">
+                <h2>Generation Results</h2>
+                <div id="sessionInfo" class="session-info"></div>
+                <div id="resultsTable" class="results-table"></div>
+                <div id="summaryStats" class="summary-stats"></div>
+                
+                <div class="results-actions">
+                    <button id="newTestBtn" class="btn btn-secondary">New Test</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <p>Running benchmark...</p>
+                <div id="loadingStatus" class="loading-status"></div>
+            </div>
+        </div>
+
+        <!-- Status Messages -->
+        <div id="statusMessages" class="status-messages"></div>
+    </div>
+
+
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

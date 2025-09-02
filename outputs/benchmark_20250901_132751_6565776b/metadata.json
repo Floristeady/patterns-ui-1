@@ -1,0 +1,68 @@
+{
+  "session_id": "6565776b-f27d-4ac6-a3aa-6bccaeb836bb",
+  "prompt": "create a timeline with cards a horizontal timeline, about a plan trip to Tokyo for 5 days, to learn about the culture",
+  "selected_models": [
+    "gpt5",
+    "gpt5_mini",
+    "gpt5_nano"
+  ],
+  "start_time": "2025-09-01T13:27:51.021274",
+  "status": "completed",
+  "results": {
+    "gpt5_nano": {
+      "model_id": "gpt5_nano",
+      "model_name": "GPT-5 Nano",
+      "provider": "openai",
+      "start_time": "2025-09-01T13:27:51.022478",
+      "end_time": "2025-09-01T13:27:51.166049",
+      "duration_seconds": 0.144,
+      "input_tokens": 124,
+      "output_tokens": null,
+      "total_tokens": null,
+      "cost_usd": null,
+      "status": "error",
+      "html_content": null,
+      "error_message": "Error code: 400 - {'error': {'message': \"Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.\", 'type': 'invalid_request_error', 'param': 'max_tokens', 'code': 'unsupported_parameter'}}"
+    },
+    "gpt5": {
+      "model_id": "gpt5",
+      "model_name": "GPT-5",
+      "provider": "openai",
+      "start_time": "2025-09-01T13:27:51.021515",
+      "end_time": "2025-09-01T13:27:51.700094",
+      "duration_seconds": 0.679,
+      "input_tokens": 124,
+      "output_tokens": null,
+      "total_tokens": null,
+      "cost_usd": null,
+      "status": "error",
+      "html_content": null,
+      "error_message": "Error code: 400 - {'error': {'message': \"Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.\", 'type': 'invalid_request_error', 'param': 'max_tokens', 'code': 'unsupported_parameter'}}"
+    },
+    "gpt5_mini": {
+      "model_id": "gpt5_mini",
+      "model_name": "GPT-5 Mini",
+      "provider": "openai",
+      "start_time": "2025-09-01T13:27:51.022209",
+      "end_time": "2025-09-01T13:27:52.157745",
+      "duration_seconds": 1.136,
+      "input_tokens": 124,
+      "output_tokens": null,
+      "total_tokens": null,
+      "cost_usd": null,
+      "status": "error",
+      "html_content": null,
+      "error_message": "Error code: 400 - {'error': {'message': \"Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.\", 'type': 'invalid_request_error', 'param': 'max_tokens', 'code': 'unsupported_parameter'}}"
+    }
+  },
+  "summary": {
+    "total_models": 3,
+    "completed": 0,
+    "failed": 3,
+    "total_cost": 0.0,
+    "fastest_model": null,
+    "slowest_model": null
+  },
+  "end_time": "2025-09-01T13:27:52.158113",
+  "duration_seconds": 1.137
+}

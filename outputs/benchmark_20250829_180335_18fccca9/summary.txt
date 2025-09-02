@@ -1,0 +1,42 @@
+AI Model Benchmarking Results
+==================================================
+Session ID: 18fccca9-9105-438b-8a23-293b2f9469ec
+Prompt: Generate a full-screen layout that uses cards for 3 columns and 3 rows, where each card has a title ...
+Start Time: 2025-08-29T18:03:35.919119
+Duration: 117.853 seconds
+
+Results by Model:
+------------------------------
+✅ Claude 3.5 Haiku
+   Duration: 22.678s
+   Cost: $0.002449
+   Status: success
+   Tokens: 2164
+
+✅ Claude Sonnet 4
+   Duration: 61.396s
+   Cost: $0.061053
+   Status: success
+   Tokens: 4275
+
+✅ GPT-5 Nano
+   Duration: 91.015s
+   Cost: $0.006169
+   Status: success
+   Tokens: 15628
+
+✅ GPT-5 Mini
+   Duration: 117.850s
+   Cost: $0.019659
+   Status: success
+   Tokens: 10035
+
+Summary Statistics:
+--------------------
+Total Models: 4
+Successful: 4
+Failed: 0
+Total Cost: $0.089330
+
+Fastest: Claude 3.5 Haiku (22.678s)
+Slowest: GPT-5 Mini (117.850s)

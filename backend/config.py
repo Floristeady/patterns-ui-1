@@ -1,0 +1,276 @@
+# Model configuration for AI benchmarking tool
+
+import os
+from typing import Dict, List, Any
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# API Configuration
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+DEBUG = os.getenv("DEBUG", "True").lower() == "true"
+HOST = os.getenv("HOST", "localhost")
+PORT = int(os.getenv("PORT", 8000))
+API_TIMEOUT = int(os.getenv("API_TIMEOUT", 60))
+GPT5_TIMEOUT = int(os.getenv("GPT5_TIMEOUT", 180))  # Increased timeout for GPT-5
+
+# Prompt template for UI generation
+PROMPT_TEMPLATE = """
+Generate ONLY HTML code with inline CSS for the following UI pattern:
+
+{user_description}
+
+Requirements:
+- Valid, complete HTML5 document
+- CSS must be inline (style attributes)
+- JavaScript only if absolutely necessary
+- Must be responsive and mobile-friendly
+- Use realistic example content (no Lorem Ipsum)
+- Include proper semantic HTML elements
+- Ensure accessibility with proper ARIA labels
+- Use modern CSS features (flexbox, grid)
+
+IMPORTANT: Respond with raw HTML code only. Do NOT wrap the code in markdown code blocks (```html). Start directly with <!DOCTYPE html> and end with </html>.
+"""
+
+# Model configurations with real pricing (Updated December 2024)
+MODELS = {
+    "nano": [
+        {
+            "id": "gpt5_nano",
+            "name": "GPT-5 Nano",
+            "provider": "openai",
+            "model_id": "gpt-5-nano",  # RESTAURADO: ID original que funcionaba
+            "enabled": True,
+            "cost_per_million_tokens": {"input": 0.05, "output": 0.40},
+            "max_tokens": 4096,
+            "context_window": 400000,
+            "timeout": 120
+        }
+    ],
+    "mini": [
+        {
+            "id": "gpt5_mini",
+            "name": "GPT-5 Mini",
+            "provider": "openai",
+            "model_id": "gpt-5-mini",  # RESTAURADO: ID original que funcionaba
+            "enabled": True,
+            "cost_per_million_tokens": {"input": 0.25, "output": 2.0},
+            "max_tokens": 8192,
+            "context_window": 400000,
+            "timeout": 150
+        },
+        {
+            "id": "gpt4o_mini",
+            "name": "GPT-4o-mini [Legacy]",
+            "provider": "openai",
+            "model_id": "gpt-4o-mini",
+            "enabled": False,  # Volvemos como estaba
+            "cost_per_million_tokens": {"input": 0.15, "output": 0.6},
+            "max_tokens": 4096,
+            "context_window": 128000
+        },
+        {
+            "id": "claude_haiku35",
+            "name": "Claude 3.5 Haiku",
+            "provider": "anthropic",
+            "model_id": "claude-3-5-haiku-20241022",
+            "enabled": True,
+            "cost_per_million_tokens": {"input": 0.25, "output": 1.25},
+            "max_tokens": 8192,
+            "context_window": 200000
+        },
+
+    ],
+    "normal": [
+        {
+            "id": "gpt5",
+            "name": "GPT-5",
+            "provider": "openai",
+            "model_id": "gpt-5",  # RESTAURADO: ID original que funcionaba
+            "enabled": True,
+            "cost_per_million_tokens": {"input": 1.25, "output": 10.0},
+            "max_tokens": 8192,
+            "context_window": 400000,
+            "timeout": 180,  # Mantenemos timeout alto para evitar timeout de 120s
+            "temperature": 0.2,
+            "retry_attempts": 2
+        },
+        {
+            "id": "gpt4o",
+            "name": "GPT-4o [Legacy]",
+            "provider": "openai",
+            "model_id": "gpt-4o",
+            "enabled": False,  # Volvemos a como estaba
+            "cost_per_million_tokens": {"input": 5.0, "output": 15.0},
+            "max_tokens": 4096,
+            "context_window": 128000
+        },
+        {
+            "id": "claude_sonnet4",
+            "name": "Claude Sonnet 4",
+            "provider": "anthropic",
+            "model_id": "claude-sonnet-4-0",  # RESTAURADO: ID original
+            "enabled": True,
+            "cost_per_million_tokens": {"input": 3.0, "output": 15.0},
+            "max_tokens": 32000,  # RESTAURADO: Valor original
+            "context_window": 200000,
+            "timeout": 120
+        },
+        {
+            "id": "claude_sonnet35_new",
+            "name": "Claude 3.5 Sonnet (Latest)",
+            "provider": "anthropic",
+            "model_id": "claude-3-5-sonnet-20241022",  # Modelo adicional estable
+            "enabled": True,
+            "cost_per_million_tokens": {"input": 3.0, "output": 15.0},
+            "max_tokens": 8192,
+            "context_window": 200000,
+            "timeout": 120
+        },
+        {
+            "id": "claude_sonnet35",
+            "name": "Claude 3.5 Sonnet [Legacy]",
+            "provider": "anthropic",
+            "model_id": "claude-3-5-sonnet-20240620",
+            "enabled": False,  # Volvemos como estaba
+            "cost_per_million_tokens": {"input": 3.0, "output": 15.0},
+            "max_tokens": 8192,
+            "context_window": 200000
+        }
+    ],
+    "premium": [
+        {
+            "id": "claude_opus41",
+            "name": "Claude Opus 4.1",
+            "provider": "anthropic",
+            "model_id": "claude-opus-4-1",
+            "enabled": True,  # Available - correct ID found
+            "cost_per_million_tokens": {"input": 15.0, "output": 75.0},
+            "max_tokens": 8192,
+            "context_window": 200000,
+            "timeout": 180  # Increased timeout for premium model
+        },
+        {
+            "id": "claude_opus3",
+            "name": "Claude 3 Opus [Legacy]",
+            "provider": "anthropic",
+            "model_id": "claude-3-opus-20240229",
+            "enabled": False,  # Disabled - superseded by Opus 4.1
+            "cost_per_million_tokens": {"input": 15.0, "output": 75.0},
+            "max_tokens": 4096,
+            "context_window": 200000
+        }
+    ],
+    "reasoning": [
+        {
+            "id": "o1_preview",
+            "name": "o1-preview [Discontinued]",
+            "provider": "openai", 
+            "model_id": "o1-preview",
+            "enabled": False,  # Disabled - model no longer available
+            "cost_per_million_tokens": {"input": 15.0, "output": 60.0},  # Historical pricing
+            "max_tokens": 32768,
+            "context_window": 128000,
+            "note": "Model discontinued - was a preview version replaced by newer o1 models"
+        },
+        {
+            "id": "o1_mini",
+            "name": "o1-mini",
+            "provider": "openai",
+            "model_id": "o1-mini",
+            "enabled": True,
+            "cost_per_million_tokens": {"input": 3.0, "output": 12.0},  # Real pricing
+            "max_tokens": 65536,
+            "context_window": 128000
+        },
+        {
+            "id": "o3_mini",
+            "name": "o3-mini",
+            "provider": "openai",
+            "model_id": "o3-mini",
+            "enabled": True,
+            "cost_per_million_tokens": {"input": 1.0, "output": 4.0},  # Estimated pricing
+            "max_tokens": 65536,
+            "context_window": 128000,
+            "note": "Latest reasoning model - uses max_completion_tokens parameter"
+        },
+        {
+            "id": "gpt_oss_20b",
+            "name": "GPT-OSS-20B [Not Available]",
+            "provider": "openai",
+            "model_id": "gpt-oss-20b",
+            "enabled": False,  # Model not found - may not be released yet
+            "cost_per_million_tokens": {"input": 0.5, "output": 2.0},
+            "max_tokens": 32768,
+            "context_window": 128000,
+            "note": "Open source reasoning model - not yet available in API"
+        },
+        {
+            "id": "gpt_oss_120b",
+            "name": "GPT-OSS-120B [Not Available]",
+            "provider": "openai", 
+            "model_id": "gpt-oss-120b",
+            "enabled": False,  # Model not found - may not be released yet
+            "cost_per_million_tokens": {"input": 1.5, "output": 6.0},
+            "max_tokens": 32768,
+            "context_window": 128000,
+            "note": "Larger open source reasoning model - not yet available in API"
+        }
+    ]
+}
+
+# Prompt template for UI generation
+PROMPT_TEMPLATE = """
+Generate ONLY HTML code with inline CSS for the following UI pattern:
+
+{user_description}
+
+Requirements:
+- Valid, complete HTML5 document
+- CSS must be inline (style attributes)
+- JavaScript only if absolutely necessary
+- Must be responsive and mobile-friendly
+- Use realistic example content (no Lorem Ipsum)
+- Include proper semantic HTML elements
+- Ensure accessibility with proper ARIA labels
+- Use modern CSS features (flexbox, grid)
+
+IMPORTANT: Respond with raw HTML code only. Do NOT wrap the code in markdown code blocks (```html). Start directly with <!DOCTYPE html> and end with </html>.
+"""
+
+# Helper functions
+def get_all_models():
+    """Get all available models across all categories"""
+    all_models = {}
+    for category, models in MODELS.items():
+        for model in models:
+            all_models[model["id"]] = {
+                **model,
+                "category": category
+            }
+    return all_models
+
+def get_enabled_models():
+    """Get only enabled models"""
+    all_models = get_all_models()
+    return {k: v for k, v in all_models.items() if v["enabled"]}
+
+def get_model_by_id(model_id: str):
+    """Get model configuration by ID"""
+    all_models = get_all_models()
+    return all_models.get(model_id)
+
+def estimate_cost(model_id: str, input_tokens: int, output_tokens: int) -> float:
+    """Estimate cost for a model given token usage"""
+    model = get_model_by_id(model_id)
+    if not model:
+        return 0.0
+    
+    cost_config = model["cost_per_million_tokens"]
+    input_cost = (input_tokens / 1_000_000) * cost_config["input"]
+    output_cost = (output_tokens / 1_000_000) * cost_config["output"]
+    
+    return input_cost + output_cost

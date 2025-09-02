@@ -1,0 +1,30 @@
+AI Model Benchmarking Results
+==================================================
+Session ID: 9d8fd084-fd61-4b48-be3a-68dad5352275
+Prompt: Create a full-screen layout with cards to plan a 6-day trip to Tokyo.
+Start Time: 2025-09-02T11:18:49.761080
+Duration: 23.241 seconds
+
+Results by Model:
+------------------------------
+✅ Claude 3.5 Haiku
+   Duration: 17.773s
+   Cost: $0.001932
+   Status: success
+   Tokens: 1726
+
+✅ Claude 3.5 Sonnet
+   Duration: 23.225s
+   Cost: $0.028890
+   Status: success
+   Tokens: 2106
+
+Summary Statistics:
+--------------------
+Total Models: 2
+Successful: 2
+Failed: 0
+Total Cost: $0.030822
+
+Fastest: Claude 3.5 Haiku (17.773s)
+Slowest: Claude 3.5 Sonnet (23.225s)
