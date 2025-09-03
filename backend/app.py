@@ -16,6 +16,7 @@ from pydantic import BaseModel
 
 from config import get_enabled_models, get_all_models, MODELS
 from services.benchmark_service import BenchmarkService
+from services.agent_benchmark_service import AgentBenchmarkService
 from services.storage_service import StorageService
 
 
@@ -24,6 +25,11 @@ class BenchmarkRequest(BaseModel):
     prompt: str
     selected_models: List[str]
     content_level: str = "none"  # Default to no content
+
+class AgentBenchmarkRequest(BaseModel):
+    user_input: str
+    selected_models: List[str]
+    benchmark_mode: str  # 'responder', 'materializer', 'chain'
 
 class BenchmarkResponse(BaseModel):
     session_id: str
@@ -49,6 +55,7 @@ app = FastAPI(
 
 # Initialize services
 benchmark_service = BenchmarkService()
+agent_benchmark_service = AgentBenchmarkService()
 storage_service = StorageService()
 
 # WebSocket connection manager
@@ -220,10 +227,71 @@ async def start_benchmark(request: BenchmarkRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to start benchmark: {str(e)}")
 
+@app.post("/api/benchmark/agents", response_model=BenchmarkResponse)
+async def start_agent_benchmark(request: AgentBenchmarkRequest):
+    """Start a new agent-based benchmark session"""
+    try:
+        # Validate input
+        if not request.user_input.strip():
+            raise HTTPException(status_code=400, detail="User input cannot be empty")
+        
+        if not request.selected_models:
+            raise HTTPException(status_code=400, detail="At least one model must be selected")
+        
+        if request.benchmark_mode not in ["responder", "materializer", "chain"]:
+            raise HTTPException(status_code=400, detail="Invalid benchmark mode")
+        
+        # Validate selected models
+        enabled_models = get_enabled_models()
+        invalid_models = [m for m in request.selected_models if m not in enabled_models]
+        if invalid_models:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid or disabled models: {', '.join(invalid_models)}"
+            )
+        
+        # Create progress callback for WebSocket updates
+        async def progress_callback(session_id: str, model_id: str, status: str, result: Dict = None):
+            await manager.send_update(session_id, model_id, status, result)
+        
+        # Start agent benchmark
+        session_task = asyncio.create_task(
+            agent_benchmark_service.run_agent_benchmark(
+                request.user_input, 
+                request.benchmark_mode,
+                request.selected_models, 
+                progress_callback
+            )
+        )
+        
+        # Give the task a moment to initialize
+        await asyncio.sleep(0.05)
+        
+        # Get session_id from active sessions
+        active_sessions = agent_benchmark_service.get_all_sessions()
+        session_id = list(active_sessions.keys())[-1] if active_sessions else "agent_benchmark_session"
+        
+        return BenchmarkResponse(
+            session_id=session_id,
+            status="started",
+            message=f"Agent benchmark ({request.benchmark_mode}) started with {len(request.selected_models)} models"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start agent benchmark: {str(e)}")
+
 @app.get("/api/sessions/{session_id}")
 async def get_session_results(session_id: str):
     """Get results for a specific session"""
+    # Try traditional benchmark first
     session_data = benchmark_service.get_session(session_id)
+    
+    # If not found, try agent benchmark
+    if not session_data:
+        session_data = agent_benchmark_service.get_session(session_id)
+    
     if not session_data:
         raise HTTPException(status_code=404, detail="Session not found")
     

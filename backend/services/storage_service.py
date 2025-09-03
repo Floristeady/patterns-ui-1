@@ -45,14 +45,34 @@ class StorageService:
         session_dir = self._get_session_directory(session_id, session_start)
         
         # Save individual HTML files
-        for model_id, result in session_data["results"].items():
-            if result["status"] == "success" and result.get("html_content"):
-                await self._save_html_file(
-                    session_dir, 
-                    model_id, 
-                    result["html_content"],
-                    result
-                )
+        results = session_data["results"]
+        
+        # Handle different result structures based on mode
+        if isinstance(results, dict):
+            # Check if this is a chain mode result (has nested phases)
+            if "responder_phase" in results and "materializer_phase" in results:
+                # Chain mode - save files from both phases
+                for phase_name, phase_results in results.items():
+                    if phase_name in ["responder_phase", "materializer_phase"] and isinstance(phase_results, dict):
+                        for model_id, result in phase_results.items():
+                            if isinstance(result, dict) and result.get("status") == "success" and result.get("html_content"):
+                                file_suffix = "_content" if phase_name == "responder_phase" else "_template"
+                                await self._save_html_file(
+                                    session_dir, 
+                                    f"{model_id}{file_suffix}", 
+                                    result["html_content"],
+                                    result
+                                )
+            else:
+                # Single phase mode
+                for model_id, result in results.items():
+                    if isinstance(result, dict) and result.get("status") == "success" and result.get("html_content"):
+                        await self._save_html_file(
+                            session_dir, 
+                            model_id, 
+                            result["html_content"],
+                            result
+                        )
         
         # Save metadata JSON
         await self._save_metadata(session_dir, session_data)
@@ -120,7 +140,7 @@ Timestamp: {result_data.get('end_time', '')}
             "AI Model Benchmarking Results",
             "=" * 50,
             f"Session ID: {session_data['session_id']}",
-            f"Prompt: {session_data['prompt'][:100]}{'...' if len(session_data['prompt']) > 100 else ''}",
+            f"Prompt: {session_data.get('prompt', session_data.get('user_input', 'N/A'))[:100]}{'...' if len(session_data.get('prompt', session_data.get('user_input', ''))) > 100 else ''}",
             f"Start Time: {session_data['start_time']}",
             f"Duration: {session_data.get('duration_seconds', 0):.3f} seconds",
             "",
@@ -128,26 +148,73 @@ Timestamp: {result_data.get('end_time', '')}
             "-" * 30
         ]
         
-        # Sort results by duration for better readability
+        # Handle different result structures
         results = session_data["results"]
-        sorted_results = sorted(
-            results.items(),
-            key=lambda x: x[1].get("duration_seconds", float('inf'))
-        )
         
-        for model_id, result in sorted_results:
-            status_icon = "✅" if result["status"] == "success" else "❌"
-            duration = result.get("duration_seconds", 0)
-            cost = result.get("cost_usd", 0)
-            
+        if isinstance(results, dict) and "responder_phase" in results and "materializer_phase" in results:
+            # Chain mode - show both phases
             summary_lines.extend([
-                f"{status_icon} {result['model_name']}",
-                f"   Duration: {duration:.3f}s",
-                f"   Cost: ${cost:.6f}",
-                f"   Status: {result['status']}",
-                f"   Tokens: {result.get('total_tokens', 'N/A')}",
+                "Chain Mode Results:",
+                "-" * 20,
                 ""
             ])
+            
+            # Show responder phase
+            summary_lines.append("📝 Content Generation (Responder):")
+            responder_results = results.get("responder_phase", {})
+            for model_id, result in responder_results.items():
+                if isinstance(result, dict):
+                    status_icon = "✅" if result.get("status") == "success" else "❌"
+                    duration = result.get("duration_seconds", 0)
+                    cost = result.get("cost_usd", 0)
+                    summary_lines.extend([
+                        f"  {status_icon} {result.get('model_name', model_id)}",
+                        f"     Duration: {duration:.3f}s | Cost: ${cost:.6f} | Tokens: {result.get('total_tokens', 'N/A')}",
+                        ""
+                    ])
+            
+            # Show materializer phase  
+            summary_lines.append("🎨 Layout Generation (Materializer):")
+            materializer_results = results.get("materializer_phase", {})
+            for model_id, result in materializer_results.items():
+                if isinstance(result, dict):
+                    status_icon = "✅" if result.get("status") == "success" else "❌"
+                    duration = result.get("duration_seconds", 0)
+                    cost = result.get("cost_usd", 0)
+                    summary_lines.extend([
+                        f"  {status_icon} {result.get('model_name', model_id)}",
+                        f"     Duration: {duration:.3f}s | Cost: ${cost:.6f} | Tokens: {result.get('total_tokens', 'N/A')}",
+                        ""
+                    ])
+                    
+            # Show timing analysis if available
+            if "timing_analysis" in results:
+                summary_lines.extend([
+                    "⏱️ Timing Analysis:",
+                    f"   Total models compared: {len(results['timing_analysis'].get('models_compared', []))}",
+                    ""
+                ])
+        else:
+            # Single phase mode
+            sorted_results = sorted(
+                results.items(),
+                key=lambda x: x[1].get("duration_seconds", float('inf')) if isinstance(x[1], dict) else float('inf')
+            )
+            
+            for model_id, result in sorted_results:
+                if isinstance(result, dict):
+                    status_icon = "✅" if result.get("status") == "success" else "❌"
+                    duration = result.get("duration_seconds", 0)
+                    cost = result.get("cost_usd", 0)
+                    
+                    summary_lines.extend([
+                        f"{status_icon} {result.get('model_name', model_id)}",
+                        f"   Duration: {duration:.3f}s",
+                        f"   Cost: ${cost:.6f}",
+                        f"   Status: {result.get('status', 'unknown')}",
+                        f"   Tokens: {result.get('total_tokens', 'N/A')}",
+                        ""
+                    ])
         
         # Add summary statistics
         summary = session_data.get("summary", {})

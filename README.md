@@ -2,15 +2,31 @@
 
 A web application to compare HTML/CSS code generation speed across different AI models including GPT-5, Claude 4, and other cutting-edge models.
 
-## 🎯 Current Status (September 2025)
+## 🎯 Current Status (January 2025)
 
 ✅ **Production Ready** - Fully functional benchmarking tool  
-✅ **9 Active Models** - GPT-5 series, Claude 4 series, o1/o3 reasoning models  
+✅ **8 Active Models** - GPT-5 series, Claude 4 series, o1/o3 reasoning models  
 ✅ **Real-time WebSocket Updates** - Live progress tracking during benchmarks  
 ✅ **Parallel Processing** - Test multiple models simultaneously  
 ✅ **Cost Tracking** - Accurate token usage and cost calculations  
 ✅ **Proven Stable** - Successfully tested with complex UI generation tasks  
-✅ **Claude Issues Resolved** - All Claude models working with streaming support
+✅ **Claude Issues Resolved** - All Claude models working with streaming support  
+✅ **Chain Mode Enhanced** - Progressive completion and JSON→HTML merging working
+
+### 🔧 Latest Updates (Branch: testing-chain)
+
+⚠️ **IMPORTANT**: The latest features and improvements are in the `testing-chain` branch:
+
+- **Chain Mode Improvements**: Models complete individually instead of waiting for all
+- **Enhanced JSON→HTML Merging**: Smart content insertion with duplicate prevention  
+- **Progressive Results**: See results as soon as each model completes its chain
+- **Better Error Handling**: Detailed debugging for JSON parsing and template merging
+- **Content Type Detection**: Automatic "View JSON" vs "View HTML" button labeling
+
+**Benchmark Types Available:**
+- **Materializer**: Generate HTML/CSS layouts and UI components
+- **Responder**: Generate structured JSON content and data
+- **Chain**: Complete workflow - JSON content + HTML template + automatic merging
 
 ## 🚀 Quick Start
 

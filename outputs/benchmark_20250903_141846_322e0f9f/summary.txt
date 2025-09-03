@@ -1,0 +1,65 @@
+AI Model Benchmarking Results
+==================================================
+Session ID: 322e0f9f-79ed-49b6-8bfe-fb0d85d13640
+Prompt: Create a clean full-screen vertical list layout with numbered items, each containing a title and 2-3...
+Start Time: 2025-09-03T14:18:46.812312
+Duration: 106.700 seconds
+
+Results by Model:
+------------------------------
+Chain Mode Results:
+--------------------
+
+📝 Content Generation (Responder):
+  ✅ GPT-5 Nano
+     Duration: 34.916s | Cost: $0.002667 | Tokens: 6839
+
+  ✅ GPT-5 Mini
+     Duration: 39.701s | Cost: $0.005377 | Tokens: 2860
+
+  ✅ Claude 3.5 Haiku
+     Duration: 7.815s | Cost: $0.000661 | Tokens: 697
+
+  ✅ Claude Sonnet 4
+     Duration: 12.995s | Cost: $0.010410 | Tokens: 862
+
+  ✅ Claude Opus 4.1
+     Duration: 13.581s | Cost: $0.045300 | Tokens: 772
+
+  ✅ o1-mini
+     Duration: 7.905s | Cost: $0.015135 | Tokens: 1408
+
+  ✅ o3-mini
+     Duration: 14.398s | Cost: $0.005517 | Tokens: 1529
+
+🎨 Layout Generation (Materializer):
+  ✅ GPT-5 Nano
+     Duration: 37.093s | Cost: $0.002842 | Tokens: 7365
+
+  ✅ GPT-5 Mini
+     Duration: 66.988s | Cost: $0.009087 | Tokens: 4803
+
+  ✅ Claude 3.5 Haiku
+     Duration: 8.660s | Cost: $0.000877 | Tokens: 993
+
+  ✅ Claude Sonnet 4
+     Duration: 31.536s | Cost: $0.051417 | Tokens: 3719
+
+  ✅ Claude Opus 4.1
+     Duration: 82.145s | Cost: $0.378960 | Tokens: 5344
+
+  ✅ o1-mini
+     Duration: 22.475s | Cost: $0.050502 | Tokens: 4441
+
+  ✅ o3-mini
+     Duration: 30.947s | Cost: $0.014758 | Tokens: 3916
+
+⏱️ Timing Analysis:
+   Total models compared: 7
+
+Summary Statistics:
+--------------------
+Total Models: 7
+Successful: 14
+Failed: 0
+Total Cost: $0.593510

@@ -344,7 +344,6 @@ class BenchmarkApp {
     async runBenchmark() {
         const prompt = document.getElementById('promptInput').value.trim();
         const selectedModelsArray = Array.from(this.selectedModels);
-        const contentLevel = document.getElementById('contentSelector').value;
         const benchmarkMode = document.getElementById('benchmarkMode').value;
         this.currentBenchmarkMode = benchmarkMode; // Store for WebSocket handling
 
@@ -370,8 +369,7 @@ class BenchmarkApp {
                     },
                     body: JSON.stringify({
                         prompt: prompt,
-                        selected_models: selectedModelsArray,
-                        content_level: contentLevel
+                        selected_models: selectedModelsArray
                     })
                 });
             } else {
@@ -492,8 +490,13 @@ class BenchmarkApp {
         const resultItem = document.getElementById(`result-${modelId}`);
         if (!resultItem) return;
         
-        // Update main class
+        console.log(`🔧 updateChainModeResult: ${modelId} -> ${status}`);
+        console.log(`   - Before class: ${resultItem.className}`);
+        
+        // Update main class - CRITICAL: Remove 'running' class to allow completion detection
         resultItem.className = `result-item ${status} chain-mode`;
+        
+        console.log(`   - After class: ${resultItem.className}`);
         
         // Get elements
         const contentTimeEl = resultItem.querySelector('.result-content-time');
@@ -905,9 +908,19 @@ class BenchmarkApp {
     }
 
     checkBenchmarkCompletion() {
-        const runningItems = document.querySelectorAll('.result-item.running');
+        const runningItems = document.querySelectorAll('.result-item.running:not(.header)');
+        const allItems = document.querySelectorAll('.result-item:not(.header)');
+        
+        console.log(`🔍 checkBenchmarkCompletion: ${runningItems.length} running, ${allItems.length} total`);
+        
+        // Debug: log all item classes
+        allItems.forEach((item, i) => {
+            console.log(`   Item ${i}: ${item.className}`);
+        });
+        
         if (runningItems.length === 0) {
             // All models completed
+            console.log('✅ All models completed - hiding loading');
             this.showLoading(false);
             this.removeProgressToast(); // Remove progress toast
             this.showStatus('Benchmark completed!', 'success');
@@ -916,13 +929,15 @@ class BenchmarkApp {
             if (this.websocket) {
                 this.websocket.close();
             }
+        } else {
+            console.log(`⏳ Still waiting for ${runningItems.length} models to complete`);
         }
     }
 
     updateSummaryStats() {
-        const resultItems = document.querySelectorAll('.result-item');
-        const successful = document.querySelectorAll('.result-item.success').length;
-        const failed = document.querySelectorAll('.result-item.error, .result-item.timeout').length;
+        const resultItems = document.querySelectorAll('.result-item:not(.header)');
+        const successful = document.querySelectorAll('.result-item.success:not(.header)').length;
+        const failed = document.querySelectorAll('.result-item.error:not(.header), .result-item.timeout:not(.header)').length;
         
         let totalCost = 0;
         let fastestTime = Infinity;
@@ -1098,11 +1113,36 @@ class BenchmarkApp {
 
     viewChainHtml(modelId, jsonContent, htmlTemplate) {
         try {
-            // Parse JSON content
-            const contentData = JSON.parse(jsonContent);
+            console.log('🔧 viewChainHtml DEBUG:');
+            console.log('  - modelId:', modelId);
+            console.log('  - jsonContent length:', jsonContent?.length);
+            console.log('  - htmlTemplate length:', htmlTemplate?.length);
+            console.log('  - jsonContent preview:', jsonContent?.substring(0, 200));
+            
+            // Validate and parse JSON content
+            if (!jsonContent || typeof jsonContent !== 'string') {
+                throw new Error(`JSON content is invalid: ${typeof jsonContent}`);
+            }
+            
+            let contentData;
+            try {
+                contentData = JSON.parse(jsonContent);
+                console.log('  - Parsed JSON:', contentData);
+            } catch (parseError) {
+                console.log('  - JSON parse failed, trying to clean:', parseError.message);
+                // Try to clean the JSON (remove markdown artifacts)
+                const cleanedJson = jsonContent
+                    .replace(/```json\n?/g, '')
+                    .replace(/\n?```/g, '')
+                    .trim();
+                contentData = JSON.parse(cleanedJson);
+                console.log('  - Parsed cleaned JSON:', contentData);
+            }
             
             // Merge content with template
             const mergedHtml = this.mergeContentWithTemplate(contentData, htmlTemplate);
+            console.log('  - Merged HTML length:', mergedHtml?.length);
+            console.log('  - Merged HTML preview:', mergedHtml?.substring(0, 300));
             
             // Create blob URL for merged HTML
             const blob = new Blob([mergedHtml], { type: 'text/html' });
@@ -1117,8 +1157,17 @@ class BenchmarkApp {
             }, 1000);
             
         } catch (error) {
-            console.error('Error merging Chain HTML:', error);
-            alert('Error al generar HTML final. Mostrando template sin contenido.');
+            console.error('❌ Error merging Chain HTML:', error);
+            console.error('❌ Error details:', {
+                message: error.message,
+                stack: error.stack,
+                jsonContent: jsonContent?.substring(0, 500),
+                htmlTemplate: htmlTemplate?.substring(0, 500)
+            });
+            
+            // Show detailed error to user
+            const errorMsg = `Error al generar HTML final: ${error.message}\n\nRevisa la consola para más detalles.`;
+            alert(errorMsg);
             
             // Fallback to template only
             const blob = new Blob([htmlTemplate], { type: 'text/html' });
@@ -1129,8 +1178,11 @@ class BenchmarkApp {
     }
 
     mergeContentWithTemplate(contentData, htmlTemplate) {
+        console.log('🔧 mergeContentWithTemplate DEBUG:');
+        
         // Flatten nested JSON structure
         const flatData = this.flattenJson(contentData);
+        console.log('  - Flattened data:', flatData);
         
         // Find all placeholders in template
         const placeholderRegex = /\{\{([^}]+)\}\}/g;
@@ -1139,9 +1191,11 @@ class BenchmarkApp {
         while ((match = placeholderRegex.exec(htmlTemplate)) !== null) {
             placeholders.push(match[1].trim());
         }
+        console.log('  - Found placeholders:', placeholders);
         
         // Create mapping of placeholders to values
         const mapping = this.smartMapping(placeholders, flatData);
+        console.log('  - Mapping result:', mapping);
         
         // Replace placeholders in template
         let result = htmlTemplate;
@@ -1182,38 +1236,65 @@ class BenchmarkApp {
     smartMapping(placeholders, flatData) {
         const mapping = {};
         const flatDataLower = {};
+        const usedValues = new Set(); // Track used values to avoid repetition
+        
+        console.log('🔧 smartMapping DEBUG - Input:', {placeholders, flatData});
         
         // Create lowercase version for flexible matching
         for (const [key, value] of Object.entries(flatData)) {
             flatDataLower[key.toLowerCase()] = value;
         }
         
-        for (const placeholder of placeholders) {
+        // Sort placeholders by specificity (longer/more specific first)
+        const sortedPlaceholders = [...placeholders].sort((a, b) => b.length - a.length);
+        
+        for (const placeholder of sortedPlaceholders) {
             const placeholderLower = placeholder.toLowerCase();
             let value = null;
+            let matchedKey = null;
             
-            // Strategy 1: Exact match
-            if (flatData[placeholder]) {
+            // Strategy 1: Exact match (highest priority)
+            if (flatData[placeholder] && !usedValues.has(flatData[placeholder])) {
                 value = flatData[placeholder];
-            } else if (flatDataLower[placeholderLower]) {
+                matchedKey = placeholder;
+            } else if (flatDataLower[placeholderLower] && !usedValues.has(flatDataLower[placeholderLower])) {
                 value = flatDataLower[placeholderLower];
-            }
-            // Strategy 2: Keyword matching
-            else if (!value) {
-                value = this.matchByKeywords(placeholderLower, flatData);
-            }
-            // Strategy 3: Similarity matching
-            else if (!value) {
-                value = this.matchBySimilarity(placeholderLower, flatData);
+                matchedKey = placeholderLower;
             }
             
-            mapping[placeholder] = value || `[${placeholder}]`; // Fallback
+            // Strategy 2: Keyword matching (avoid already used values)
+            if (!value) {
+                const keywordResult = this.matchByKeywords(placeholderLower, flatData, usedValues);
+                if (keywordResult) {
+                    value = keywordResult.value;
+                    matchedKey = keywordResult.key;
+                }
+            }
+            
+            // Strategy 3: Similarity matching (avoid already used values)
+            if (!value) {
+                const similarityResult = this.matchBySimilarity(placeholderLower, flatData, usedValues);
+                if (similarityResult) {
+                    value = similarityResult.value;
+                    matchedKey = similarityResult.key;
+                }
+            }
+            
+            if (value) {
+                mapping[placeholder] = value;
+                usedValues.add(value);
+                console.log(`  ✅ Mapped "${placeholder}" → "${value}" (from ${matchedKey})`);
+            } else {
+                mapping[placeholder] = `[${placeholder}]`; // Fallback
+                console.log(`  ❌ No match for "${placeholder}" - using fallback`);
+            }
         }
         
+        console.log('🔧 Final mapping:', mapping);
         return mapping;
     }
 
-    matchByKeywords(placeholder, flatData) {
+    matchByKeywords(placeholder, flatData, usedValues = new Set()) {
         const keywordMap = {
             'title': ['title', 'name', 'heading', 'header'],
             'name': ['name', 'title', 'label'],
@@ -1227,10 +1308,10 @@ class BenchmarkApp {
         // Find keyword type for placeholder
         for (const [keyType, keywords] of Object.entries(keywordMap)) {
             if (keywords.some(kw => placeholder.includes(kw))) {
-                // Find matching data key
+                // Find matching data key that hasn't been used
                 for (const [dataKey, dataValue] of Object.entries(flatData)) {
-                    if (keywords.some(kw => dataKey.toLowerCase().includes(kw))) {
-                        return dataValue;
+                    if (keywords.some(kw => dataKey.toLowerCase().includes(kw)) && !usedValues.has(dataValue)) {
+                        return { value: dataValue, key: dataKey };
                     }
                 }
             }
@@ -1239,13 +1320,17 @@ class BenchmarkApp {
         return null;
     }
 
-    matchBySimilarity(placeholder, flatData) {
+    matchBySimilarity(placeholder, flatData, usedValues = new Set()) {
         let bestMatch = null;
         let bestScore = 0;
+        let bestKey = null;
         
         const placeholderWords = new Set(placeholder.split('_'));
         
         for (const [dataKey, dataValue] of Object.entries(flatData)) {
+            // Skip if value already used
+            if (usedValues.has(dataValue)) continue;
+            
             const dataWords = new Set(dataKey.toLowerCase().split('_'));
             const commonWords = [...placeholderWords].filter(word => dataWords.has(word));
             const score = commonWords.length / Math.max(placeholderWords.size, 1);
@@ -1253,10 +1338,11 @@ class BenchmarkApp {
             if (score > bestScore && score > 0.3) {
                 bestScore = score;
                 bestMatch = dataValue;
+                bestKey = dataKey;
             }
         }
         
-        return bestMatch;
+        return bestMatch ? { value: bestMatch, key: bestKey } : null;
     }
 
 

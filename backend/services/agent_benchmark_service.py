@@ -239,18 +239,43 @@ RESPOND with HTML template only, no explanations."""
         session_id: str,
         progress_callback: Optional[Callable] = None
     ) -> Dict[str, Any]:
-        """Benchmark both agents in sequence"""
-        # Phase 1: Responder
+        """Benchmark both agents in sequence - INDIVIDUAL MODEL PROCESSING"""
         if progress_callback:
-            await progress_callback(session_id, "system", "phase1_start", {"phase": "Content Generation"})
+            await progress_callback(session_id, "system", "chain_start", {"phase": "Starting Chain Mode - Individual Model Processing"})
         
-        responder_results = await self._benchmark_responder_only(user_input, models, session_id, progress_callback)
+        # Create tasks for each model to run BOTH phases individually
+        tasks = []
+        for model_id in models:
+            task = asyncio.create_task(
+                self._benchmark_single_model_chain(
+                    user_input, model_id, session_id, progress_callback
+                )
+            )
+            tasks.append(task)
         
-        # Phase 2: Materializer  
-        if progress_callback:
-            await progress_callback(session_id, "system", "phase2_start", {"phase": "Materializer (Layout Generation)"})
+        # Execute all model chains in parallel
+        results = await asyncio.gather(*tasks, return_exceptions=True)
         
-        materializer_results = await self._benchmark_materializer_only(user_input, models, session_id, progress_callback)
+        # Process results into expected structure
+        responder_results = {}
+        materializer_results = {}
+        
+        for i, result in enumerate(results):
+            model_id = models[i]
+            if isinstance(result, dict) and "responder_result" in result and "materializer_result" in result:
+                responder_results[model_id] = result["responder_result"]
+                materializer_results[model_id] = result["materializer_result"]
+            else:
+                # Handle errors
+                error_result = {
+                    "model_id": model_id,
+                    "status": "error",
+                    "error_message": str(result) if not isinstance(result, dict) else "Unknown error",
+                    "duration_seconds": 0,
+                    "cost_usd": 0
+                }
+                responder_results[model_id] = error_result
+                materializer_results[model_id] = error_result
         
         # Combine results
         combined_results = {
@@ -259,22 +284,76 @@ RESPOND with HTML template only, no explanations."""
             "timing_analysis": self._analyze_chain_timings(responder_results, materializer_results)
         }
         
-        # Send chain completion updates for each model
-        if progress_callback:
-            for model_id in models:
-                if model_id in responder_results and model_id in materializer_results:
-                    # Create a special result structure for chain completion
-                    chain_completion_result = {
-                        "model_id": model_id,
-                        "status": "success",
-                        "responder_phase": {model_id: responder_results[model_id]},
-                        "materializer_phase": {model_id: materializer_results[model_id]},
-                        "timing_analysis": combined_results["timing_analysis"]
-                    }
-                    # Send chain completion update with combined data
-                    await progress_callback(session_id, model_id, "chain_completed", chain_completion_result)
-        
         return combined_results
+    
+    async def _benchmark_single_model_chain(
+        self,
+        user_input: str,
+        model_id: str,
+        session_id: str,
+        progress_callback: Optional[Callable] = None
+    ) -> Dict[str, Any]:
+        """Run complete chain (responder + materializer) for a single model"""
+        model_config = get_model_by_id(model_id)
+        if not model_config:
+            raise ValueError(f"Model {model_id} not found")
+        
+        try:
+            # Phase 1: Responder (Content Generation)
+            if progress_callback:
+                await progress_callback(session_id, model_id, "responder_start", {"phase": "Content Generation", "model": model_id})
+            
+            responder_prompt = self.generate_responder_prompt(user_input)
+            responder_result = await self._benchmark_single_agent(
+                responder_prompt, model_config, "responder", session_id, progress_callback
+            )
+            
+            # Phase 2: Materializer (Layout Generation) 
+            if progress_callback:
+                await progress_callback(session_id, model_id, "materializer_start", {"phase": "Layout Generation", "model": model_id})
+            
+            materializer_prompt = self.generate_materializer_prompt(user_input)
+            materializer_result = await self._benchmark_single_agent(
+                materializer_prompt, model_config, "materializer", session_id, progress_callback
+            )
+            
+            # Send chain completion immediately when THIS model finishes
+            if progress_callback and responder_result.get("status") == "success" and materializer_result.get("status") == "success":
+                chain_completion_result = {
+                    "model_id": model_id,
+                    "status": "success",
+                    "responder_phase": {model_id: responder_result},
+                    "materializer_phase": {model_id: materializer_result},
+                    "timing_analysis": {
+                        "total_time": (responder_result.get("duration_seconds", 0) + materializer_result.get("duration_seconds", 0)),
+                        "responder_time": responder_result.get("duration_seconds", 0),
+                        "materializer_time": materializer_result.get("duration_seconds", 0)
+                    }
+                }
+                await progress_callback(session_id, model_id, "chain_completed", chain_completion_result)
+            
+            return {
+                "responder_result": responder_result,
+                "materializer_result": materializer_result
+            }
+            
+        except Exception as e:
+            error_result = {
+                "model_id": model_id,
+                "model_name": model_config.get("name", model_id),
+                "status": "error",
+                "error_message": str(e),
+                "duration_seconds": 0,
+                "cost_usd": 0
+            }
+            
+            if progress_callback:
+                await progress_callback(session_id, model_id, "error", error_result)
+            
+            return {
+                "responder_result": error_result,
+                "materializer_result": error_result
+            }
     
     async def _benchmark_single_agent(
         self, 
