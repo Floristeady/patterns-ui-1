@@ -65,6 +65,117 @@ class AnthropicClient:
         # Default timeout for Anthropic models
         return API_TIMEOUT
     
+    async def generate_content(self, prompt: str, model_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate content using Anthropic model without HTML template
+        Used for content generation (JSON) in agent benchmarks
+        """
+        model_id = model_config["model_id"]
+        start_time = datetime.now()
+        timeout = self.get_model_timeout(model_config)
+        
+        # Use prompt directly without HTML template
+        input_tokens = self.count_tokens(prompt)
+        
+        result = {
+            "model_id": model_config["id"],
+            "model_name": model_config["name"],
+            "provider": "anthropic",
+            "start_time": start_time.isoformat(),
+            "end_time": None,
+            "duration_seconds": None,
+            "input_tokens": input_tokens,
+            "output_tokens": None,
+            "total_tokens": None,
+            "cost_usd": None,
+            "status": "running",
+            "html_content": None,  # Will contain JSON content for responder
+            "error_message": None
+        }
+        
+        try:
+            # Handle streaming requirement for Claude Sonnet 4 and other models
+            try:
+                # First try without streaming
+                response = await asyncio.wait_for(
+                    self.client.messages.create(
+                        model=model_id,
+                        max_tokens=model_config.get("max_tokens", 8192),
+                        temperature=0.3,
+                        messages=[
+                            {"role": "user", "content": prompt}
+                        ]
+                    ),
+                    timeout=timeout
+                )
+            except Exception as e:
+                error_msg = str(e)
+                if "Streaming is required" in error_msg:
+                    # If streaming is required, use reduced max_tokens to avoid the issue
+                    print(f"Retrying {model_config['name']} content generation with reduced tokens...")
+                    response = await asyncio.wait_for(
+                        self.client.messages.create(
+                            model=model_id,
+                            max_tokens=8192,  # Reduced tokens to avoid streaming requirement
+                            temperature=0.3,
+                            messages=[
+                                {"role": "user", "content": prompt}
+                            ]
+                        ),
+                        timeout=timeout
+                    )
+                else:
+                    raise e
+            
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            
+            # Extract response content (no cleaning for JSON)
+            raw_content = response.content[0].text.strip()
+            
+            # Token usage
+            output_tokens = response.usage.output_tokens if response.usage else self.count_tokens(raw_content)
+            total_tokens = input_tokens + output_tokens
+            
+            # Calculate cost
+            cost_config = model_config["cost_per_million_tokens"]
+            input_cost = (input_tokens / 1_000_000) * cost_config["input"]
+            output_cost = (output_tokens / 1_000_000) * cost_config["output"]
+            total_cost = input_cost + output_cost
+            
+            # Update result
+            result.update({
+                "end_time": end_time.isoformat(),
+                "duration_seconds": round(duration, 3),
+                "output_tokens": output_tokens,
+                "total_tokens": total_tokens,
+                "cost_usd": round(total_cost, 6),
+                "status": "success",
+                "html_content": raw_content  # Contains JSON for responder
+            })
+            
+        except asyncio.TimeoutError:
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            result.update({
+                "end_time": end_time.isoformat(),
+                "duration_seconds": round(duration, 3),
+                "status": "timeout",
+                "error_message": f"Request timed out after {timeout} seconds"
+            })
+            
+        except Exception as e:
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            result.update({
+                "end_time": end_time.isoformat(),
+                "duration_seconds": round(duration, 3),
+                "status": "error",
+                "error_message": str(e)
+            })
+        
+        return result
+    
     async def generate_html(self, prompt: str, model_config: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generate HTML using Anthropic Claude model and return benchmarking results

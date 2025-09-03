@@ -67,6 +67,126 @@ class OpenAIClient:
         # Default timeout for other models
         return API_TIMEOUT
     
+    async def generate_content(self, prompt: str, model_config: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate content using OpenAI model without HTML template
+        Used for content generation (JSON) in agent benchmarks
+        """
+        model_id = model_config["model_id"]
+        start_time = datetime.now()
+        timeout = self.get_model_timeout(model_config)
+        
+        # Use prompt directly without HTML template
+        input_tokens = self.count_tokens(prompt)
+        
+        result = {
+            "model_id": model_config["id"],
+            "model_name": model_config["name"],
+            "provider": "openai",
+            "start_time": start_time.isoformat(),
+            "end_time": None,
+            "duration_seconds": None,
+            "input_tokens": input_tokens,
+            "output_tokens": None,
+            "total_tokens": None,
+            "cost_usd": None,
+            "status": "running",
+            "html_content": None,  # Will contain JSON content for responder
+            "error_message": None
+        }
+        
+        try:
+            # Special handling for o1 models (they don't support system messages)
+            if model_id.startswith("o1-"):
+                messages = [
+                    {"role": "user", "content": prompt}
+                ]
+                response = await asyncio.wait_for(
+                    self.client.chat.completions.create(
+                        model=model_id,
+                        messages=messages
+                    ),
+                    timeout=timeout
+                )
+            else:
+                # Standard models with system/user pattern
+                messages = [
+                    {"role": "system", "content": "You are a helpful assistant that generates structured data as requested."},
+                    {"role": "user", "content": prompt}
+                ]
+                
+                completion_params = {
+                    "model": model_id,
+                    "messages": messages
+                }
+                
+                # Add parameters based on model type
+                if model_id.startswith("gpt-5"):
+                    # GPT-5 models - minimal parameters only
+                    pass  # No additional parameters for GPT-5 models
+                elif model_id.startswith("o3-"):
+                    # o3 models - support reasoning_effort parameter
+                    if "reasoning_effort" in model_config:
+                        completion_params["reasoning_effort"] = model_config["reasoning_effort"]
+                else:
+                    completion_params["temperature"] = 0.3
+                    completion_params["max_tokens"] = model_config.get("max_tokens", 4096)
+                
+                response = await asyncio.wait_for(
+                    self.client.chat.completions.create(**completion_params),
+                    timeout=timeout
+                )
+            
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            
+            # Extract response content (no cleaning for JSON)
+            raw_content = response.choices[0].message.content.strip()
+            
+            # Token usage
+            usage = response.usage
+            output_tokens = usage.completion_tokens if usage else self.count_tokens(raw_content)
+            total_tokens = usage.total_tokens if usage else (input_tokens + output_tokens)
+            
+            # Calculate cost
+            cost_config = model_config["cost_per_million_tokens"]
+            input_cost = (input_tokens / 1_000_000) * cost_config["input"]
+            output_cost = (output_tokens / 1_000_000) * cost_config["output"]
+            total_cost = input_cost + output_cost
+            
+            # Update result
+            result.update({
+                "end_time": end_time.isoformat(),
+                "duration_seconds": round(duration, 3),
+                "output_tokens": output_tokens,
+                "total_tokens": total_tokens,
+                "cost_usd": round(total_cost, 6),
+                "status": "success",
+                "html_content": raw_content  # Contains JSON for responder
+            })
+            
+        except asyncio.TimeoutError:
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            result.update({
+                "end_time": end_time.isoformat(),
+                "duration_seconds": round(duration, 3),
+                "status": "timeout",
+                "error_message": f"Request timed out after {timeout} seconds"
+            })
+            
+        except Exception as e:
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            result.update({
+                "end_time": end_time.isoformat(),
+                "duration_seconds": round(duration, 3),
+                "status": "error",
+                "error_message": str(e)
+            })
+        
+        return result
+
     async def generate_html_with_retry(self, prompt: str, model_config: Dict[str, Any]) -> Dict[str, Any]:
         """Generate HTML with retry logic for timeout issues"""
         retry_attempts = model_config.get("retry_attempts", 1)
@@ -160,13 +280,12 @@ class OpenAIClient:
                 
                 # Add parameters based on model type
                 if model_id.startswith("gpt-5"):
-                    # GPT-5 models - minimal parameters (temperature and top_p not supported on some models)
-                    # Using only the required parameters: model and messages
-                    pass  # No additional parameters for GPT-5 models initially
+                    # GPT-5 models - minimal parameters only
+                    pass  # No additional parameters for GPT-5 models
                 elif model_id.startswith("o3-"):
-                    # o3 models - minimal parameters (similar to GPT-5)
-                    # Testing with minimal parameters as max_completion_tokens is not supported
-                    pass  # No additional parameters for o3 models initially
+                    # o3 models - support reasoning_effort parameter
+                    if "reasoning_effort" in model_config:
+                        completion_params["reasoning_effort"] = model_config["reasoning_effort"]
                 else:
                     # Standard models support temperature and max_tokens
                     completion_params["temperature"] = 0.3  # Lower temperature for more consistent code generation

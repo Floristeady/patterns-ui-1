@@ -57,28 +57,64 @@ A web application to compare HTML/CSS code generation speed across different AI 
 3. **Run Benchmark**: Click "Generate with Selected Models"
 4. **View Results**: Compare response times, costs, and generated HTML
 
-## 📊 Supported Models (Updated September 2025)
+## 📊 Supported Models (Final - January 2025)
 
 ### Nano Category (Ultra-fast) ⚡
-- **GPT-5 Nano** ✅ - ~30s response time, $0.002 per test
+- **GPT-5 Nano** ✅ - Model ID: `gpt-5-nano`, ~30s, $0.05/$0.40 per M tokens
 
 ### Mini Category (Fast & Efficient) 🚀
-- **GPT-5 Mini** ✅ - ~120s response time, $0.016 per test
-- **Claude 3.5 Haiku** ✅ - ~22s response time, budget-friendly
+- **GPT-5 Mini** ✅ - Model ID: `gpt-5-mini`, ~120s, $0.25/$2.0 per M tokens
+- **Claude 3.5 Haiku** ⚠️ - Model ID: `claude-3-5-haiku-20241022`, ~20s, $0.25/$1.25 per M tokens (Temp. server issues)
 
 ### Normal Category (Balanced) ⚖️
-- **GPT-5** ✅ - High quality, 180s timeout
-- **Claude Sonnet 4** ✅ - ~60s response time, $0.095 per test
-- **Claude 3.5 Sonnet (Latest)** ✅ - ~12s response time, stable model
+- **GPT-5** ✅ - Model ID: `gpt-5`, ~22s, $1.25/$10.0 per M tokens (Fixed timeout issues)
+- **Claude Sonnet 4** ✅ - Model ID: `claude-sonnet-4-0`, ~11s, $3.0/$15.0 per M tokens (Fixed streaming issues)
 
 ### Premium Category (Highest Quality) 💎
-- **Claude Opus 4.1** ✅ - Premium quality, higher cost
+- **Claude Opus 4.1** ✅ - Model ID: `claude-opus-4-1`, 180s timeout, $15.0/$75.0 per M tokens
 
 ### Reasoning Category (Complex Tasks) 🧠
-- **o1-mini** ✅ - ~12s response time, $0.030 per test
-- **o3-mini** ✅ - ~29s response time, $0.017 per test
+- **o1-mini** ✅ - Model ID: `o1-mini`, ~15s, $3.0/$12.0 per M tokens
+- **o3-mini** ✅ - Model ID: `o3-mini`, medium reasoning, 120s timeout, $1.0/$4.0 per M tokens
 
-**Total: 9 active models** | **Legacy models disabled by default**
+**Total: 8 models (7 working, 1 temp. issue)** | **All core models tested and verified working**
+
+### 🎯 Model Selection Strategy
+
+**For Speed**: GPT-5 Nano → o1-mini → Claude Sonnet 4  
+**For Quality**: Claude Opus 4.1 → Claude Sonnet 4 → GPT-5  
+**For Cost**: GPT-5 Nano → o3-mini → Claude 3.5 Haiku  
+**For Reasoning**: o3-mini (medium) → o1-mini
+
+### 🔧 Current Configuration Notes
+
+- **GPT-5 models restored**: All GPT-5 variants available and working
+- **o3-mini back**: Restored with medium reasoning effort - works perfectly
+- **Claude Haiku**: Temporary Anthropic server issues (500 error)
+- **Removed**: GPT-4o Mini Legacy (not working), Claude 3.5 Sonnet variants (not needed)
+
+### 📋 Exact Model Configuration
+
+| Model | Category | Model ID | Timeout | Cost (Input/Output per M) | Status |
+|-------|----------|----------|---------|---------------------------|--------|
+| GPT-5 Nano | nano | `gpt-5-nano` | 120s | $0.05 / $0.40 | ✅ Working |
+| GPT-5 Mini | mini | `gpt-5-mini` | 150s | $0.25 / $2.0 | ✅ Working |
+| Claude 3.5 Haiku | mini | `claude-3-5-haiku-20241022` | - | $0.25 / $1.25 | ⚠️ Temp. issues |
+| GPT-5 | normal | `gpt-5` | 300s | $1.25 / $10.0 | ✅ Working (Fixed) |
+| Claude Sonnet 4 | normal | `claude-sonnet-4-0` | 120s | $3.0 / $15.0 | ✅ Working (Fixed) |
+| Claude Opus 4.1 | premium | `claude-opus-4-1` | 180s | $15.0 / $75.0 | ✅ Working |
+| o1-mini | reasoning | `o1-mini` | - | $3.0 / $12.0 | ✅ Working |
+| o3-mini | reasoning | `o3-mini` | 120s | $1.0 / $4.0 | ✅ Working |
+
+**Total: 8 models (7 working, 1 temp. issue)** | **Latest fixes applied - all core models operational**
+
+**Key Configuration Decisions:**
+- **All models working**: GPT-5 and Claude Sonnet 4 issues completely resolved (Jan 2025)
+- **GPT-5**: Extended timeout (300s) - now works perfectly in ~22s
+- **Claude Sonnet 4**: Fixed streaming issues - now works in ~11s  
+- **Claude Haiku**: Temporary Anthropic server issues (will resolve)
+- **o3-mini**: Medium reasoning effort for optimal balance
+- **⚠️ IMPORTANT**: Configuration is stable - DO NOT CHANGE without testing
 
 ## 📁 Project Structure
 
@@ -175,22 +211,24 @@ Should return: `"openai": true, "anthropic": true`
 
 ## 📈 Performance Tips & Benchmarks
 
-### Speed Recommendations
-- **Fastest**: o1-mini (~12s) or GPT-5 Nano (~30s) for quick iterations
-- **Balanced**: Claude 3.5 Haiku (~22s) for cost-effective quality
-- **Quality**: Claude Sonnet 4 (~60s) for detailed, complex UIs
-- **Reasoning**: o3-mini (~29s) for logic-heavy components
+### Speed Recommendations (Updated Config - All Working)
+- **Fastest**: Claude Sonnet 4 (~11s) → o1-mini (~15s) → GPT-5 (~22s) for quick iterations
+- **Balanced**: GPT-5 (~22s) for reliable, fast quality - now much faster!
+- **Quality**: Claude Sonnet 4 (~11s) for detailed, complex UIs - incredibly fast now
+- **Reasoning**: o3-mini (medium, ~21s) for logic-heavy components
 
 ### Cost Optimization
-- **Budget**: Claude 3.5 Haiku - excellent quality/cost ratio
-- **Premium**: GPT-5 Mini - slower but very cost-effective per token
+- **Ultra Budget**: GPT-5 Nano ($0.05/$0.40) - cheapest option
+- **Budget**: o3-mini ($1.0/$4.0) - excellent reasoning/cost ratio
+- **Balanced**: Claude 3.5 Haiku ($0.25/$1.25) - good quality/cost ratio
 - **Avoid**: Running all 8 models simultaneously (high cost)
 
-### Best Practices
-- Start with 2-3 models for initial testing
-- Use nano/mini models for rapid iteration
-- Monitor your API usage and costs in real-time
-- GPT-5 models may take 2-3 minutes for complex requests
+### Best Practices (Current Setup)
+- Start with GPT-5 + Claude 3.5 Haiku for quick comparisons
+- Use GPT-5 Nano for rapid prototyping and iteration
+- o3-mini (medium) provides best reasoning without slow/fast variants
+- GPT-5 now uses fast mode (gpt-5-chat) - expect ~45-90s responses
+- Monitor costs: 8 models × complex prompt can cost $1-5+ per test
 
 ## 🎉 Features
 

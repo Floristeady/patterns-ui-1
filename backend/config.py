@@ -55,23 +55,16 @@ MODELS = {
             "id": "gpt5_mini",
             "name": "GPT-5 Mini",
             "provider": "openai",
-            "model_id": "gpt-5-mini",  # RESTAURADO: ID original que funcionaba
+            "model_id": "gpt-5-mini",  # Modelo que SÍ existe
             "enabled": True,
             "cost_per_million_tokens": {"input": 0.25, "output": 2.0},
             "max_tokens": 8192,
             "context_window": 400000,
-            "timeout": 150
+            "timeout": 150,
+            "temperature": 0.2,
+            "note": "GPT-5 Mini model"
         },
-        {
-            "id": "gpt4o_mini",
-            "name": "GPT-4o-mini [Legacy]",
-            "provider": "openai",
-            "model_id": "gpt-4o-mini",
-            "enabled": False,  # Volvemos como estaba
-            "cost_per_million_tokens": {"input": 0.15, "output": 0.6},
-            "max_tokens": 4096,
-            "context_window": 128000
-        },
+
         {
             "id": "claude_haiku35",
             "name": "Claude 3.5 Haiku",
@@ -89,14 +82,15 @@ MODELS = {
             "id": "gpt5",
             "name": "GPT-5",
             "provider": "openai",
-            "model_id": "gpt-5",  # RESTAURADO: ID original que funcionaba
+            "model_id": "gpt-5",  # Modelo que SÍ existe
             "enabled": True,
             "cost_per_million_tokens": {"input": 1.25, "output": 10.0},
             "max_tokens": 8192,
             "context_window": 400000,
-            "timeout": 180,  # Mantenemos timeout alto para evitar timeout de 120s
+            "timeout": 300,  # Aumentado a 5 minutos para GPT-5
             "temperature": 0.2,
-            "retry_attempts": 2
+            "retry_attempts": 2,
+            "note": "GPT-5 standard model - requires longer timeout"
         },
         {
             "id": "gpt4o",
@@ -119,27 +113,8 @@ MODELS = {
             "context_window": 200000,
             "timeout": 120
         },
-        {
-            "id": "claude_sonnet35_new",
-            "name": "Claude 3.5 Sonnet (Latest)",
-            "provider": "anthropic",
-            "model_id": "claude-3-5-sonnet-20241022",  # Modelo adicional estable
-            "enabled": True,
-            "cost_per_million_tokens": {"input": 3.0, "output": 15.0},
-            "max_tokens": 8192,
-            "context_window": 200000,
-            "timeout": 120
-        },
-        {
-            "id": "claude_sonnet35",
-            "name": "Claude 3.5 Sonnet [Legacy]",
-            "provider": "anthropic",
-            "model_id": "claude-3-5-sonnet-20240620",
-            "enabled": False,  # Volvemos como estaba
-            "cost_per_million_tokens": {"input": 3.0, "output": 15.0},
-            "max_tokens": 8192,
-            "context_window": 200000
-        }
+
+
     ],
     "premium": [
         {
@@ -153,16 +128,7 @@ MODELS = {
             "context_window": 200000,
             "timeout": 180  # Increased timeout for premium model
         },
-        {
-            "id": "claude_opus3",
-            "name": "Claude 3 Opus [Legacy]",
-            "provider": "anthropic",
-            "model_id": "claude-3-opus-20240229",
-            "enabled": False,  # Disabled - superseded by Opus 4.1
-            "cost_per_million_tokens": {"input": 15.0, "output": 75.0},
-            "max_tokens": 4096,
-            "context_window": 200000
-        }
+
     ],
     "reasoning": [
         {
@@ -192,10 +158,12 @@ MODELS = {
             "provider": "openai",
             "model_id": "o3-mini",
             "enabled": True,
-            "cost_per_million_tokens": {"input": 1.0, "output": 4.0},  # Estimated pricing
+            "cost_per_million_tokens": {"input": 1.0, "output": 4.0},
             "max_tokens": 65536,
             "context_window": 128000,
-            "note": "Latest reasoning model - uses max_completion_tokens parameter"
+            "timeout": 120,
+            "reasoning_effort": "medium",  # Balance entre velocidad y calidad
+            "note": "Reasoning model with balanced speed/quality"
         },
         {
             "id": "gpt_oss_20b",

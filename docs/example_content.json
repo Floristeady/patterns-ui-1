@@ -1,0 +1,43 @@
+{
+  "productComparison": [
+    {
+      "id": 1,
+      "name": "MacBook Pro 16\"",
+      "category": "Laptop",
+      "price": "$2,499",
+      "processor": "M3 Max",
+      "memory": "32GB",
+      "storage": "1TB SSD",
+      "display": "16-inch Liquid Retina XDR",
+      "battery": "22 hours",
+      "weight": "4.8 lbs"
+    },
+    {
+      "id": 2,
+      "name": "MacBook Air 15\"",
+      "category": "Laptop", 
+      "price": "$1,299",
+      "processor": "M3",
+      "memory": "16GB",
+      "storage": "512GB SSD",
+      "display": "15-inch Liquid Retina",
+      "battery": "18 hours",
+      "weight": "3.3 lbs"
+    },
+    {
+      "id": 3,
+      "name": "iPad Pro 12.9\"",
+      "category": "Tablet",
+      "price": "$1,099",
+      "processor": "M2",
+      "memory": "8GB",
+      "storage": "256GB",
+      "display": "12.9-inch Liquid Retina XDR",
+      "battery": "10 hours",
+      "weight": "1.5 lbs"
+    }
+  ],
+  "title": "Product Comparison Table",
+  "subtitle": "Compare features and specifications",
+  "lastUpdated": "2025-01-02"
+}
